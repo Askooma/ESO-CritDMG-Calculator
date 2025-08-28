@@ -4,24 +4,23 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>U47 Critical Damage Calculator (Local)</title>
-    <!-- Tailwind via CDN -->
+    
     <script src="https://cdn.tailwindcss.com"></script>
   </head>
   <body class="bg-neutral-950 text-neutral-100">
     <div id="root"></div>
 
-    <!-- React 18 + ReactDOM from CDN -->
+  
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
 
-    <!-- Babel standalone to compile JSX in the browser (fine for local/testing) -->
+    
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-    <!-- Your calculator component (converted from export default to a plain function) -->
+    
     <script type="text/babel" data-presets="react">
-      const { useMemo, useState } = React;
-
-      // Single-file React component (Tailwind-ready)
+      const { useMemo, useState } = React; 
+      
       // A flexible, *basic* U47 Critical Damage calculator you can tweak.
       // - Edit %/stack and max stacks as needed (values here are just starters)
       // - Check items on/off and set stacks to see totals
