@@ -4,7 +4,7 @@ I sympathize with their reasoning for discontinuing their tools. ESO has had som
 
 This basic website is made for any player wanting to optimize their group's Crit DMG and Penetration. Currently that is the main scope of this project. 
 I may be open to adding more to the site in the future. 
-Please feel free to suggest any changes to the calcular or edit/use my code.
+Please feel free to suggest any changes to the calculator or edit/use my code.
 
 ⠀⠀⢠⡶⠛⠛⠢⣄⠀⠀⣀⣀⣀⣤⣀⣀⣀⢀⡤⠖⠛⠓⣆⠀⠀⠀
 ⠀⠀⣾⠁⢠⡆⠀⣌⠿⠿⠛⣻⣿⣯⠙⣛⠻⠏⠀⣠⣤⡀⢸⠀⠀⠀
