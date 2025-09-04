@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Penetration-Calc (Local)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-neutral-950 text-neutral-100">
+    <div id="root"></div>
+
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <script type="text/babel" data-presets="react">
+      const { useMemo, useState } = React; 
+
+      function ESOCritCalculator() {
+        const [cap, setCap] = useState(18200);
+
+        const [effects, setEffects] = useState(() => [
+          { id: "MajorBreach", name: "Major Breach", perStack: 5948, stacks: 0, maxStacks: 1, on: false },
+          { id: "MinorBreach", name: "Minor Breach", perStack: 2974, stacks: 0, maxStacks: 1, on: false },
+          { id: "Crusher", name: "Crusher", perStack: 2108, stacks: 0, maxStacks: 1, on: false },
+          { id: "Alkosh", name: "Alkosh", perStack: 6000, stacks: 0, maxStacks: 1, on: false },
+          { id: "Tremor", name: "Tremorscale", perStack: 2640, stacks: 0, maxStacks: 1, on: false },
+          { id: "CrimsonOath", name: "CrimsonOath", perStack: 3541, stacks: 0, maxStacks: 1, on: false },
+          { id: "RunicSunder", name: "Runic Sunder", perStack: 2200, stacks: 0, maxStacks: 1, on: false },
+          { id: "CrystalWeapon", name: "Crystal Weapon", perStack: 1000, stacks: 0, maxStacks: 1, on: false },
+          { id: "Anthelmir", name: "Anthelmir", perStack: 2000, stacks: 0, maxStacks: 1, on: false },
+          { id: "Sharpened", name: "Sharpened", perStack: 1638, stacks: 0, maxStacks: 2, on: false },
+          { id: "Mace/Maul", name: "Mace/Maul(X2 for Maul)", perStack: 1487, stacks: 0, maxStacks: 2, on: false },
+          { id: "ForceOfNature", name: "Force of Nature", perStack: 660, stacks: 0, maxStacks: 6, on: false },
+          { id: "Piercing", name: "Piercing CP", perStack: 700, stacks: 0, maxStacks: 1, on: false },
+          { id: "LightArmor", name: "Light Armor Passive(per piece)", perStack: 939, stacks: 0, maxStacks: 7, on: false },
+          { id: "NecroPassive", name: "Dismember", perStack: 3271, stacks: 0, maxStacks: 1, on: false },
+          { id: "ArcPassive", name: "Splintered Secrets", perStack: 1240, stacks: 0, maxStacks: 6, on: false },
+          { id: "WoodElfPassive", name: "Wood Elf Passive", perStack: 950, stacks: 0, maxStacks: 1, on: false },
+          { id: "SetBounus", name: "Set Piece Pen-Line Bounus", perStack: 1487, stacks: 0, maxStacks: 5, on: false },
+          { id: "ArenaOnePiece", name: "One Piece Arena Set", perStack: 1190, stacks: 0, maxStacks: 1, on: false },
+          { id: "TheLover", name: "The Lover(# of Stacks Based # of Divines)", perStack: 2744, stacks: 0, maxStacks: 7, on: false },
+        ]);
+
+        const totals = React.useMemo(() => {
+          const rows = effects.map((e) => ({
+            ...e,
+            line: e.on ? round2(e.perStack * clamp(e.stacks, 0, e.maxStacks)) : 0,
+          }));
+          const raw = round2(rows.reduce((s, r) => s + r.line, 0));
+          const capped = Math.min(raw, cap);
+          return { rows, raw, capped };
+        }, [effects, cap]);
+
+        function update(id, patch) {
+          setEffects((prev) => prev.map((e) => (e.id === id ? { ...e, ...patch } : e)));
+        }
+
+        function addCustom() {
+          const idx = effects.length + 1;
+          setEffects((prev) => [
+            ...prev,
+            { id: `custom_${idx}`,
+              name: `Custom Modifier ${idx}`,
+              perStack: 1,
+              stacks: 0,
+              maxStacks: 1,
+              on: false,
+            },
+          ]);
+        }
+
+        function resetAll() {
+          setEffects((prev) => prev.map((e) => ({ ...e, on: e.locked || false, stacks: e.locked ? 1 : 0 })));
+        }
+
+        function exportConfig() {
+          const payload = {
+            cap,
+            effects: effects.map(({ id, name, perStack, maxStacks }) => ({ id, name, perStack, maxStacks })),
+          };
+          if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(JSON.stringify(payload, null, 2));
+            alert("Config copied to clipboard as JSON.");
+          } else {
+            const ta = document.createElement('textarea');
+            ta.value = JSON.stringify(payload, null, 2);
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            alert("Config copied to clipboard (fallback).");
+          }
+        }
+
+        function importConfig() {
+          const text = prompt("Paste config JSON");
+          if (!text) return;
+          try {
+            const cfg = JSON.parse(text);
+            setCap(cfg.cap ?? 125);
+            setEffects((prev) => {
+              const map = new Map(prev.map((e) => [e.id, e]));
+              for (const row of (cfg.effects || [])) {
+                const cur = map.get(row.id);
+                if (cur) {
+                  map.set(row.id, { ...cur, name: row.name ?? cur.name, perStack: row.perStack ?? cur.perStack, maxStacks: row.maxStacks ?? cur.maxStacks });
+                } else {
+                  map.set(row.id, { id: row.id, name: row.name || row.id, perStack: row.perStack || 0, maxStacks: row.maxStacks || 1, stacks: 0, on: false });
+                }
+              }
+              return Array.from(map.values());
+            });
+          } catch (e) {
+            alert("Invalid JSON");
+          }
+        }
+
+        return (
+          <div className="min-h-screen bg-neutral-950 text-neutral-100">
+            {/* Top Bar with three links */}
+            <header className="sticky top-0 z-10 border-b border-neutral-800 bg-neutral-950/80 backdrop-blur">
+              <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
+                <a href="index.html" className="text-lg font-semibold text-orange-500">
+                  Skooma Tools
+                </a>
+              <nav className="flex items-center gap-4 text-sm">
+                  <a className="hover:text-orange-400" href="index.html">Home</a>
+                  <a className="hover:text-orange-400" href="CritDmg-Calc.html">ESO Crit Damage Calculator</a>
+                  <a className="hover:text-orange-400" href="Penetration-Calc.html">Penetration Calculator</a>
+                </nav>
+              </div>
+            </header>
+
+            {/* Page content */}
+            <div className="p-6">
+              <div className="max-w-4xl mx-auto">
+                <h1 className="text-3xl font-semibold mb-4">Penetration Calculator</h1>
+                <p className="text-sm text-neutral-300 mb-6">Toggle sources of penetration, and adjust how many stacks you have. Let the calculator do the rest!</p>
+
+                <div className="flex flex-wrap items-center gap-3 mb-4">
+                  <label className="flex items-center gap-2 bg-neutral-800 rounded-xl px-3 py-2">
+                    <span className="text-sm">Penetration Cap</span>
+                    <input
+                      type="number"
+                      value={cap}
+                      onChange={(e) => setCap(toNumber(e.target.value, 0, 999999))}
+                      className="w-24 bg-neutral-900 rounded px-2 py-1"
+                    />
+                  </label>
+                  <button onClick={addCustom} className="px-3 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-sm shadow">Add custom row</button>
+                  <button onClick={resetAll} className="px-3 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-sm">Reset toggles</button>
+                  <button onClick={exportConfig} className="px-3 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-sm">Export config</button>
+                  <button onClick={importConfig} className="px-3 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-sm">Import config</button>
+                </div>
+
+                <div className="overflow-x-auto rounded-2xl ring-1 ring-neutral-800">
+                  <table className="min-w-full text-sm">
+                    <thead className="bg-neutral-900/80">
+                      <tr>
+                        <th className="px-3 py-2 text-left">On</th>
+                        <th className="px-3 py-2 text-left">Stacks</th>
+                        <th className="px-3 py-2 text-left">Max</th>
+                        <th className="px-3 py-2 text-left">Source</th>
+                        <th className="px-3 py-2 text-left">Amount per stack</th>
+                        <th className="px-3 py-2 text-right">Line total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {totals.rows.map((e) => (
+                        <tr key={e.id} className="odd:bg-neutral-950 even:bg-neutral-900/40">
+                          <td className="px-3 py-2">
+                            <input type="checkbox" checked={e.on} disabled={e.locked} onChange={(ev) => update(e.id, { on: ev.target.checked })} />
+                          </td>
+                          <td className="px-3 py-2">
+                            <input
+                              type="number"
+                              min={0}
+                              max={e.maxStacks}
+                              value={e.stacks}
+                              disabled={e.locked}
+                              onChange={(ev) => update(e.id, { stacks: toNumber(ev.target.value, 0, e.maxStacks) })}
+                              className="w-20 bg-neutral-900 rounded px-2 py-1"
+                            />
+                          </td>
+                          <td className="px-3 py-2">
+                            <input
+                              type="number"
+                              min={1}
+                              value={e.maxStacks}
+                              onChange={(ev) => update(e.id, { maxStacks: toNumber(ev.target.value, 1, 999) })}
+                              className="w-20 bg-neutral-900 rounded px-2 py-1"
+                            />
+                          </td>
+                          <td className="px-3 py-2">
+                            <div className="flex flex-col">
+                              <span className="font-medium">{e.name}</span>
+                              {e.note ? <span className="text-xs text-neutral-400">{e.note}</span> : null}
+                            </div>
+                          </td>
+                          <td className="px-3 py-2">
+                            <div className="flex items-center gap-1">
+                              <input
+                                type="number"
+                                value={e.perStack}
+                                onChange={(ev) => update(e.id, { perStack: toNumber(ev.target.value, -999999, 999999) })}
+                                className="w-24 bg-neutral-900 rounded px-2 py-1"
+                              />
+                            </div>
+                          </td>
+                          <td className="px-3 py-2 text-right">{e.line.toFixed(2)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+                  <StatCard title="Raw Total" value={`${totals.raw.toFixed(2)}`} subtitle="Sum of all enabled rows" extraClass={colorForRaw(totals.raw)} />
+                  <StatCard title="Cap" value={`${cap}`} subtitle="Hard limit applied" />
+                  <StatCard title="Total (Capped)" value={`${totals.capped.toFixed(2)}`} subtitle="What actually counts" />
+                </div>
+
+                <p className="text-xs text-neutral-400 mt-6">Tip: Adjust values to match your current patch if needed.</p>
+              </div>
+
+              <div className="mt-10 text-center text-xs text-neutral-500 space-y-1">
+                <p>Last updated on 9/4/2025, for U47.</p>
+                <p>Created and maintained by Askooma</p>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      function StatCard({ title, value, subtitle, extraClass }) {
+        return (
+          <div className="rounded-2xl bg-neutral-900 p-4 ring-1 ring-neutral-800 shadow">
+            <div className="text-sm text-neutral-400">{title}</div>
+            <div className={`text-3xl font-semibold ${extraClass || ""}`}>{value}</div>
+            <div className="text-xs text-neutral-400 mt-1">{subtitle}</div>
+          </div>
+        );
+      }
+
+      function round2(n) { return Math.round(n * 100) / 100; }
+      function clamp(n, a, b) { return Math.max(a, Math.min(b, Number.isFinite(n) ? n : a)); }
+      function toNumber(v, min, max) { return clamp(Number(v), min, max); }
+
+      function colorForRaw(raw) {
+        if (raw < 18200) return "text-red-500";
+        if (raw >= 18200 && raw <= 20000) return "text-green-500";
+        if (raw > 20000) return "text-blue-500";
+        return "";
+      }
+
+      const root = ReactDOM.createRoot(document.getElementById('root'));
+      root.render(<ESOCritCalculator />);
+    </script>
+  </body>
+</html>
